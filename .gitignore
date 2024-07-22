@@ -1,4 +1,4 @@
-data/
-model/
+face/data/
+face/model/
 __pycache__/
 .idea/

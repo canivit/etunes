@@ -8,6 +8,7 @@ from model import EmotionCNN
 emotion_map = {0: 'Angry', 1: 'Disgust', 2: 'Fear', 3: 'Happy', 4: 'Sad', 5: 'Surprise', 6: 'Neutral'}
 model_path = 'model/best_model.pth'
 
+
 def predict_emotion_from_webcam():
     model = EmotionCNN()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -26,7 +27,7 @@ def predict_emotion_from_webcam():
         gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # Detect face using Haar Cascade
-        haar_cascade_path = 'haarcascade_frontalface_default.xml'
+        haar_cascade_path = '../haarcascade_frontalface_default.xml'
         face_cascade = cv2.CascadeClassifier(haar_cascade_path)
         faces = face_cascade.detectMultiScale(gray_image, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
