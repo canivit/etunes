@@ -10,9 +10,9 @@ load_dotenv()
 
 playlists = [
     '5DVUEqRL1EV8I9n65eBaAw',  # sad
-    # '',  # happy
-    # '',  # angry
-    # '',  # fear
+    '37i9dQZF1EIgG2NEOhqsD7',  # happy
+    '37i9dQZF1EIgNZCaOGb0Mi',  # angry
+    '37i9dQZF1EIdHmP6runabL',  # fear
 ]
 
 song_features = [
