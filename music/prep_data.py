@@ -56,4 +56,4 @@ for emotion, playlist_id in enumerate(playlists):
         features.append(emotion)
         df.loc[len(df)] = features
 
-print(df)
+df.to_csv('songs.csv', index=False)
