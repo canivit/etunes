@@ -11,22 +11,31 @@
       pkgs = import nixpkgs {
         inherit system;
       };
+
+      py =
+        (pkgs.python312.withPackages (ps: [
+          ps.numpy
+          ps.pandas
+          ps.scikit-learn
+          ps.torch
+          ps.torchvision
+          (ps.opencv4.override { enableGtk2 = true; })
+          ps.spotipy
+          ps.python-dotenv
+        ]));
     in
     {
       devShell = pkgs.mkShell {
         name = "py-flake";
 
-        buildInputs = with pkgs; [
-          jetbrains.pycharm-community
-          (python312.withPackages (ps: [
-            ps.numpy
-            ps.pandas
-            ps.scikit-learn
-            ps.torch
-            ps.torchvision
-            (ps.opencv4.override { enableGtk2 = true; })
-          ]))
+        buildInputs = [
+          py
         ];
+
+        shellHook = ''
+          mkdir -p .interpreter
+          ln -sf ${py}/bin/python .interpreter/python
+        '';
       };
     });
 }

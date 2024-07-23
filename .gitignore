@@ -1,4 +1,6 @@
 face/data/
 face/model/
+music/.env
 __pycache__/
 .idea/
+.interpreter/
