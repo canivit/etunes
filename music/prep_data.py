@@ -16,15 +16,15 @@ playlists = [
 ]
 
 song_features = [
-    'acousticness',
-    'danceability',
-    'energy',
-    'instrumentalness',
-    'liveness',
-    'loudness',
-    'speechiness',
-    'tempo',
-    'valence',
+    'acousticness',  # [0.0 - 1.0]
+    'danceability',  # [0.0 - 1.0]
+    'energy',  # [0.0 - 1.0]
+    'instrumentalness',  # [0.0 - 1.0]
+    'liveness',  # [0.0 - 1.0]
+    'loudness',  # [-60 - 0]
+    'speechiness',  # [0.0 - 1.0]
+    'tempo',  # API does not specify range
+    'valence',  # [0.0 - 1.0]
 ]
 
 auth_manager = SpotifyClientCredentials()
@@ -43,7 +43,7 @@ def get_songs_in_playlist(playlist_id):
 
 def get_song_features(track_id):
     features = sp.audio_features(track_id)[0]
-    return [features[key] for key in song_features]
+    return [float(features[key]) for key in song_features]
 
 
 columns = song_features.copy()
