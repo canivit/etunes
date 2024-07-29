@@ -22,6 +22,7 @@
           (ps.opencv4.override { enableGtk2 = true; })
           ps.spotipy
           ps.python-dotenv
+          ps.jupyter
         ]));
     in
     {

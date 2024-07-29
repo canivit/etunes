@@ -2,6 +2,7 @@
 
 import spotipy
 import pandas as pd
+import os
 from spotipy.oauth2 import SpotifyClientCredentials
 from dotenv import load_dotenv
 
@@ -10,9 +11,9 @@ load_dotenv()
 
 playlists = [
     '5DVUEqRL1EV8I9n65eBaAw',  # sad
-    '37i9dQZF1EIgG2NEOhqsD7',  # happy
-    '37i9dQZF1EIgNZCaOGb0Mi',  # angry
-    '37i9dQZF1EIdHmP6runabL',  # fear
+    '7GhawGpb43Ctkq3PRP1fOL',  # happy
+    '5IwFDvJvKVub47mVa4DPY0',  # angry
+    '0sdnUIRzRN4Z3kvVI2wGA8',  # fear
 ]
 
 song_features = [
@@ -56,4 +57,5 @@ for emotion, playlist_id in enumerate(playlists):
         features.append(emotion)
         df.loc[len(df)] = features
 
-df.to_csv('songs.csv', index=False)
+os.makedirs('data', exist_ok=True)
+df.to_csv('data/songs.csv', index=False)
