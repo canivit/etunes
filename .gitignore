@@ -1,7 +1,3 @@
-face/data/
-music/.env
 __pycache__/
 .idea/
 .interpreter/
-music/songs.csv
-music/.cache
