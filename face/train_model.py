@@ -1,58 +1,85 @@
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import tqdm
 
-from data_prep import prep_data
-from model import EmotionCNN
+from fer2013 import prep_data, get_data_loaders
+from model import SimpleCNN, SimpleVGG
 
-model = EmotionCNN()
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model.to(device)
 
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-num_epochs = 50
-best_val_loss = float('inf')
-
-train_loader, val_loader, test_loader = prep_data()
-
-for epoch in range(num_epochs):
+def train_epoch(model, optimizer, train_loader, loss_fn, device, curr_epoch, start_batch):
     model.train()
-    running_loss = 0.0
-    for images, labels in train_loader:
+    total_loss = 0
+    count = 0
+    for batch_idx, (images, labels) in enumerate(tqdm.tqdm(train_loader), start=start_batch):
         images, labels = images.to(device), labels.to(device)
 
-        optimizer.zero_grad()
-
+        # Forward pass
         outputs = model(images)
-        loss = criterion(outputs, labels)
+        loss = loss_fn(outputs, labels)
+
+        # Backward and optimize
+        optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        running_loss += loss.item() * images.size(0)
+        total_loss += loss.item()
+        count += 1
+        if batch_idx % 10 == 0:
+            save_checkpoint(model, optimizer, curr_epoch, batch_idx + 1, 'data/vgg_checkpoint.pt')
 
-    epoch_loss = running_loss / len(train_loader.dataset)
-    print(f'Epoch {epoch + 1}/{num_epochs}, Training Loss: {epoch_loss:.4f}')
+    avg_loss = total_loss / count
+    print(f'Epoch {curr_epoch}, Loss: {avg_loss:.4f}')
+    torch.save(model.state_dict(), 'model.pth')
 
-    model.eval()
-    val_loss = 0.0
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for images, labels in val_loader:
-            images, labels = images.to(device), labels.to(device)
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            val_loss += loss.item() * images.size(0)
-            _, predicted = torch.max(outputs, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
 
-    val_loss = val_loss / len(val_loader.dataset)
-    val_accuracy = 100 * correct / total
-    print(f'Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy:.2f}%')
+def train(model, optimizer, train_loader, loss_fn, device, start_epoch, end_epoch, start_batch):
+    for epoch in range(start_epoch, end_epoch):
+        if epoch != start_epoch:
+            start_batch = 0
+        train_epoch(model, optimizer, train_loader, loss_fn, device, epoch, start_batch)
+        if epoch > start_epoch:
+            continue
 
-    if val_loss < best_val_loss:
-        best_val_loss = val_loss
-        torch.save(model.state_dict(), 'model/best_model.pth')
+
+def save_checkpoint(model, optimizer, epoch, batch, file):
+    os.makedirs(os.path.dirname(file), exist_ok=True)
+    checkpoint = {
+        'epoch': epoch,
+        'batch': batch,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+    }
+
+    torch.save(checkpoint, file)
+
+
+def load_checkpoint(checkpoint_path, model, optimizer):
+    if os.path.exists(checkpoint_path):
+        checkpoint = torch.load(checkpoint_path)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        start_epoch = checkpoint['epoch']
+        start_batch = checkpoint['batch']
+
+        print(f'Checkpoint loaded: {checkpoint_path}')
+        print(f'Resuming from epoch {start_epoch}, batch {start_batch}')
+
+        return start_epoch, start_batch
+    else:
+        print(f'No checkpoint found at {checkpoint_path}. Starting training from scratch.')
+        return 0, 0
+
+
+model = SimpleVGG()
+learning_rate = 0.001
+num_epochs = 100
+batch_size = 64
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model.to(device)
+train_loader, test_loader = get_data_loaders(batch_size)
+start_epoch, start_batch = load_checkpoint('data/vgg_checkpoint.pt', model, optimizer)
+train(model, optimizer, train_loader, loss_fn, device, start_epoch, num_epochs, start_batch)

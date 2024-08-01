@@ -23,6 +23,7 @@
           ps.spotipy
           ps.python-dotenv
           ps.jupyter
+          ps.tqdm
         ]));
     in
     {
