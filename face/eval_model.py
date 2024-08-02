@@ -2,8 +2,8 @@ import os
 import torch
 import tqdm
 
-from fer2013 import get_data_loaders
-from model import SimpleCNN
+from fer2013 import get_data_loaders, vgg_transform
+from model import SimpleCNN, create_custom_vgg
 
 
 def eval_loop(model, test_loader, device):
@@ -32,11 +32,12 @@ def load_checkpoint(file, model):
 
 
 batch_size = 64
-checkpoint_file = 'data/checkpoint.pt'
-model = SimpleCNN()
+checkpoint_file = 'data/vgg_checkpoint.pt'
+model = create_custom_vgg(num_classes=5)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
-train_loader, test_loader = get_data_loaders(batch_size)
+transform = vgg_transform()
+train_loader, test_loader = get_data_loaders(batch_size, transform)
 model_loaded = load_checkpoint(checkpoint_file, model)
 if model_loaded:
     eval_loop(model, test_loader, device)

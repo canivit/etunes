@@ -50,15 +50,8 @@ class FER2013Dataset(Dataset):
         return image, label
 
 
-def get_data_loaders(batch_size):
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5], std=[0.5])  # Normalize for grayscale images
-    ])
-
-    x_train, y_train, x_test, y_test = prep_data('data/fer2013.csv')
-    # x_train /= 255
-    # x_test /= 255
+def get_data_loaders(csv_file, batch_size, transform=None):
+    x_train, y_train, x_test, y_test = prep_data(csv_file)
 
     train_dataset = FER2013Dataset(x_train, y_train, transform=transform)
     test_dataset = FER2013Dataset(x_test, y_test, transform=transform)
@@ -67,3 +60,16 @@ def get_data_loaders(batch_size):
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     return train_loader, test_loader
+
+
+def vgg_transform():
+    """
+    :return: transformation for VGG model
+    """
+    return transforms.Compose([
+        transforms.ToPILImage(),  # Convert the NumPy array to a PIL image
+        transforms.Grayscale(num_output_channels=3),  # Convert the grayscale image to 3 channels by duplicating
+        transforms.Resize((224, 224)),  # Resize to the VGG input size of 224x224
+        transforms.ToTensor(),  # Convert the image to a PyTorch tensor
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize with ImageNet stats
+    ])

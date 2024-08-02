@@ -24,6 +24,7 @@
           ps.python-dotenv
           ps.jupyter
           ps.tqdm
+          ps.sagemaker
         ]));
     in
     {

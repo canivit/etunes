@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision import models
 
 
 class SimpleCNN(nn.Module):
@@ -60,7 +61,7 @@ class SimpleVGG(nn.Module):
         self.conv5_1 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.conv5_2 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
         self.conv5_3 = nn.Conv2d(512, 512, kernel_size=3, padding=1)
-        self.pool5 = nn.AdaptiveAvgPool2d((1, 1))  # Use AdaptiveAvgPool to ensure the output size is always 1x1
+        self.pool5 = nn.MaxPool2d(kernel_size=2, stride=2)
 
         # Fully connected layers
         self.fc1 = nn.Linear(512 * 1 * 1, 4096)
@@ -101,3 +102,9 @@ class SimpleVGG(nn.Module):
         x = self.fc3(x)
 
         return x
+
+
+def create_custom_vgg(num_classes):
+    model = models.vgg16(weights='DEFAULT')
+    model.classifier[6] = nn.Linear(model.classifier[6].in_features, num_classes)
+    return model
