@@ -3,17 +3,17 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import tqdm
 
 from fer2013 import get_data_loaders, vgg_transform
 from model import create_custom_vgg
 
 
 def train_epoch(model, optimizer, train_loader, loss_fn, device, epoch, start_batch_idx, dst_checkpoint):
+    print(f'Starting epoch {epoch}')
     model.train()
     total_loss = 0
     count = 0
-    for batch_idx, (images, labels) in enumerate(tqdm.tqdm(train_loader)):
+    for batch_idx, (images, labels) in enumerate(train_loader):
         if batch_idx < start_batch_idx:
             continue
 
@@ -33,7 +33,7 @@ def train_epoch(model, optimizer, train_loader, loss_fn, device, epoch, start_ba
             save_checkpoint(model, optimizer, epoch, batch_idx + 1, dst_checkpoint)
 
     avg_loss = total_loss / count
-    print(f'Epoch {epoch}, Loss: {avg_loss:.4f}')
+    print(f'Completed epoch {epoch}, Loss: {avg_loss:.4f}')
     torch.save(model.state_dict(), 'model.pth')
 
 
