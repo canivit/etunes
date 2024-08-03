@@ -88,7 +88,7 @@ if __name__ == "__main__":
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--batch-size', type=int, default=64)
     parser.add_argument('--learning-rate', type=float, default=0.001)
-    parser.add_argument('--save-interval', type=int, default=10,
+    parser.add_argument('--save-interval', type=int, default=100,
                         help='Number of batches between checkpoints')
     parser.add_argument('--data-file', type=str, required=True)
     parser.add_argument('--src-checkpoint', type=str, required=False)
@@ -102,8 +102,9 @@ if __name__ == "__main__":
         data_dir = os.environ["SM_CHANNEL_TRAIN"]
         checkpoint_dir = '/opt/ml/checkpoints'
         data_file = os.path.join(data_dir, data_file)
-        src_checkpoint = os.path.join(checkpoint_dir, src_checkpoint)
         dst_checkpoint = os.path.join(checkpoint_dir, dst_checkpoint)
+        if src_checkpoint is not None:
+            src_checkpoint = os.path.join(checkpoint_dir, src_checkpoint)
 
     model = create_custom_vgg(num_classes=5)
     loss_fn = nn.CrossEntropyLoss()
