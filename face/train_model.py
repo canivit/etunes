@@ -60,7 +60,10 @@ def save_checkpoint(model, optimizer, epoch, batch, file):
 
 
 def load_checkpoint(checkpoint_path, model, optimizer):
-    if os.path.exists(checkpoint_path):
+    if checkpoint_path is None:
+        print(f'No checkpoint is provided. Starting training from scratch.')
+        return 0, 0
+    elif os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path)
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
@@ -88,7 +91,7 @@ if __name__ == "__main__":
     parser.add_argument('--save-interval', type=int, default=10,
                         help='Number of batches between checkpoints')
     parser.add_argument('--data-file', type=str, required=True)
-    parser.add_argument('--src-checkpoint', type=str, required=True)
+    parser.add_argument('--src-checkpoint', type=str, required=False)
     parser.add_argument('--dst-checkpoint', type=str, required=True)
     args = parser.parse_args()
 

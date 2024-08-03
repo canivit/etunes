@@ -24,8 +24,8 @@ pytorch_estimator = PyTorch(
         'batch-size': 64,
         'learning-rate': 0.001,
         'data-file': 'fer2013.csv',
-        'src_checkpoint': 'checkpoint_1.pt',
-        'dst_checkpoint': 'checkpoint_2.pt',
+        # 'src-checkpoint': 'checkpoint_1.pt',
+        'dst-checkpoint': 'checkpoint_1.pt',
     },
     checkpoint_s3_uri=s3_checkpoint_dir,
 )
