@@ -14,6 +14,7 @@
 
       py =
         (pkgs.python312.withPackages (ps: [
+          ps.pip
           ps.numpy
           ps.pandas
           ps.scikit-learn
@@ -33,6 +34,7 @@
 
         buildInputs = [
           py
+          pkgs.awscli2
         ];
 
         shellHook = ''

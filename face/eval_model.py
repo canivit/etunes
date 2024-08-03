@@ -37,7 +37,7 @@ model = create_custom_vgg(num_classes=5)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
 transform = vgg_transform()
-train_loader, test_loader = get_data_loaders(batch_size, transform)
+train_loader, test_loader = get_data_loaders('data/fer2013.csv', batch_size, transform)
 model_loaded = load_checkpoint(checkpoint_file, model)
 if model_loaded:
     eval_loop(model, test_loader, device)
