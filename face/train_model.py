@@ -3,6 +3,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.backends import cudnn
 
 from fer2013 import get_data_loaders
 from model import SimpleCNN, simple_cnn_transform
@@ -88,6 +89,7 @@ if __name__ == "__main__":
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--batch-size', type=int, default=64)
     parser.add_argument('--learning-rate', type=float, default=0.001)
+    parser.add_argument('--num-workers', type=int, default=0)
     parser.add_argument('--save-interval', type=int, default=100,
                         help='Number of batches between checkpoints')
     parser.add_argument('--data-file', type=str, required=True)
@@ -109,7 +111,14 @@ if __name__ == "__main__":
     model = SimpleCNN()
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    device = 'cpu'
+    if torch.cuda.is_available():
+        print(f'Cuda is available. Using {torch.cuda.device_count()} GPU(s)')
+        device = 'cuda'
+        cudnn.benchmark = True
+        model = nn.DataParallel(model)
+
     model.to(device)
     transform = simple_cnn_transform()
     train_loader, test_loader = get_data_loaders(data_file, args.batch_size, transform)

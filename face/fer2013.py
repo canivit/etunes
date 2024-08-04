@@ -50,13 +50,13 @@ class FER2013Dataset(Dataset):
         return image, label
 
 
-def get_data_loaders(csv_file, batch_size, transform=None):
+def get_data_loaders(csv_file, batch_size, num_workers, transform=None):
     x_train, y_train, x_test, y_test = prep_data(csv_file)
 
     train_dataset = FER2013Dataset(x_train, y_train, transform=transform)
     test_dataset = FER2013Dataset(x_test, y_test, transform=transform)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     return train_loader, test_loader

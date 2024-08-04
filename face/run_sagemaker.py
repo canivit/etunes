@@ -18,11 +18,13 @@ pytorch_estimator = PyTorch(
     framework_version='1.13',  # PyTorch version
     py_version='py39',  # Python version
     instance_count=1,
-    instance_type='ml.c5.4xlarge',
+    # instance_type='ml.c5.4xlarge',
+    instance_type='ml.p3.8xlarge',
     hyperparameters={
         'epochs': 100,
         'batch-size': 64,
         'learning-rate': 0.001,
+        'num-workers': 4,
         'data-file': 'fer2013.csv',
         # 'src-checkpoint': 'checkpoint_1.pt',
         'dst-checkpoint': 'checkpoint_1.pt',
