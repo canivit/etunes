@@ -121,6 +121,6 @@ if __name__ == "__main__":
 
     model.to(device)
     transform = simple_cnn_transform()
-    train_loader, test_loader = get_data_loaders(data_file, args.batch_size, transform)
+    train_loader, test_loader = get_data_loaders(data_file, args.batch_size, args.num_workers, transform)
     start_epoch, start_batch = load_checkpoint(src_checkpoint, model, optimizer)
     train(model, optimizer, train_loader, loss_fn, device, start_epoch, args.epochs, start_batch, dst_checkpoint)
