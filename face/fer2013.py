@@ -60,16 +60,3 @@ def get_data_loaders(csv_file, batch_size, transform=None):
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     return train_loader, test_loader
-
-
-def vgg_transform():
-    """
-    :return: transformation for VGG model
-    """
-    return transforms.Compose([
-        transforms.ToPILImage(),  # Convert the NumPy array to a PIL image
-        transforms.Grayscale(num_output_channels=3),  # Convert the grayscale image to 3 channels by duplicating
-        transforms.Resize((224, 224)),  # Resize to the VGG input size of 224x224
-        transforms.ToTensor(),  # Convert the image to a PyTorch tensor
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  # Normalize with ImageNet stats
-    ])

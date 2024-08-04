@@ -2,8 +2,8 @@ import os
 import torch
 import tqdm
 
-from fer2013 import get_data_loaders, vgg_transform
-from model import SimpleCNN, create_custom_vgg
+from fer2013 import get_data_loaders
+from model import SimpleCNN, create_custom_vgg, vgg_transform
 
 
 def eval_loop(model, test_loader, device):

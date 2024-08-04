@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from fer2013 import get_data_loaders, vgg_transform
-from model import create_custom_vgg
+from fer2013 import get_data_loaders
+from model import SimpleCNN, simple_cnn_transform
 
 
 def train_epoch(model, optimizer, train_loader, loss_fn, device, epoch, start_batch_idx, dst_checkpoint):
@@ -34,7 +34,7 @@ def train_epoch(model, optimizer, train_loader, loss_fn, device, epoch, start_ba
 
     avg_loss = total_loss / count
     print(f'Completed epoch {epoch}, Loss: {avg_loss:.4f}')
-    torch.save(model.state_dict(), 'model.pth')
+    save_checkpoint(model, optimizer, epoch + 1, 0, dst_checkpoint)
 
 
 def train(model, optimizer, train_loader, loss_fn, device, start_epoch, end_epoch, start_batch,
@@ -106,11 +106,12 @@ if __name__ == "__main__":
         if src_checkpoint is not None:
             src_checkpoint = os.path.join(checkpoint_dir, src_checkpoint)
 
-    model = create_custom_vgg(num_classes=5)
+    model = SimpleCNN()
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
-    train_loader, test_loader = get_data_loaders(data_file, args.batch_size, vgg_transform())
+    transform = simple_cnn_transform()
+    train_loader, test_loader = get_data_loaders(data_file, args.batch_size, transform)
     start_epoch, start_batch = load_checkpoint(src_checkpoint, model, optimizer)
     train(model, optimizer, train_loader, loss_fn, device, start_epoch, args.epochs, start_batch, dst_checkpoint)
