@@ -1,61 +1,63 @@
 # Load the trained model
+import argparse
+import os
+
 import cv2
 import torch
-from torchvision import transforms
+from torch import nn
 
-from model import EmotionCNN
+from model import SimpleCNN, simple_cnn_transform
 
-emotion_map = {0: 'Angry', 1: 'Disgust', 2: 'Fear', 3: 'Happy', 4: 'Sad', 5: 'Surprise', 6: 'Neutral'}
-model_path = 'model/best_model.pth'
+emotions = ['Angry', 'Fear', 'Happy', 'Sad', 'Neutral']
+transform = simple_cnn_transform(augment=False)
 
 
-def predict_emotion_from_webcam():
-    model = EmotionCNN()
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model.to(device)
-    model.load_state_dict(torch.load(model_path))
+def image_to_tensor(image):
+    resized = cv2.resize(image, (48, 48)).astype('float32')
+    grayscale = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+    tensor = transform(grayscale)
+    return tensor
+
+
+def predict_emotion(model, device, tensor):
+    tensor = tensor.unsqueeze(0).to(device)
     model.eval()
+    with torch.no_grad():
+        output = model(tensor)
+        print(output)
+        _, predicted = torch.max(output, 1)
+        emotion_idx = predicted.item()
+        return emotions[emotion_idx]
+
+
+def load_checkpoint(file, model):
+    if os.path.exists(file):
+        checkpoint = torch.load(file, map_location=torch.device('cpu'))
+        model.load_state_dict(checkpoint['model_state_dict'])
+        print(f'Model is loaded from checkpoint file: {file}')
+        return True
+    else:
+        return False
+
+
+def run(model, device):
     # Capture the video from the webcam
     cap = cv2.VideoCapture(0)
-
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        # Convert to grayscale
-        gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
         # Detect face using Haar Cascade
-        haar_cascade_path = '../haarcascade_frontalface_default.xml'
+        haar_cascade_path = 'haarcascade_frontalface_default.xml'
         face_cascade = cv2.CascadeClassifier(haar_cascade_path)
-        faces = face_cascade.detectMultiScale(gray_image, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-
+        faces = face_cascade.detectMultiScale(frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
         for (x, y, w, h) in faces:
-            face = gray_image[y:y + h, x:x + w]
-
-            # Resize to 48x48
-            resized_face = cv2.resize(face, (48, 48))
-
-            # Normalize the image
-            normalized_face = resized_face.astype('float32') / 255.0
-
-            # Convert to a PyTorch tensor
-            transform = transforms.Compose([
-                transforms.ToTensor(),
-            ])
-            tensor_face = transform(normalized_face).unsqueeze(0).to(device)  # Add batch dimension and move to device
-
-            # Predict the emotion
-            with torch.no_grad():
-                output = model(tensor_face)
-                _, predicted = torch.max(output, 1)
-                emotion = predicted.item()
-
-                # Draw rectangle around the face and put the emotion text
-                emotion_text = f'Emotion: {emotion_map[emotion]}'
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-                cv2.putText(frame, emotion_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+            face = frame[y:y + h, x:x + w]
+            tensor = image_to_tensor(face)
+            emotion = predict_emotion(model, device, tensor)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+            cv2.putText(frame, emotion, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
 
         # Display the resulting frame
         cv2.imshow('Webcam', frame)
@@ -68,4 +70,28 @@ def predict_emotion_from_webcam():
     cv2.destroyAllWindows()
 
 
-predict_emotion_from_webcam()
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--checkpoint', type=str, required=True)
+    parser.add_argument('--parallel', action='store_true')
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    model = SimpleCNN()
+    if args.parallel:
+        model = nn.DataParallel(model)
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+
+    model_loaded = load_checkpoint(args.checkpoint, model)
+    if model_loaded:
+        run(model, device)
+    else:
+        print(f'Failed to load model from file {args.checkpoint}')
+
+
+if __name__ == "__main__":
+    main()
