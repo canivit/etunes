@@ -1,3 +1,4 @@
+import argparse
 import os
 import torch
 import tqdm
@@ -32,16 +33,25 @@ def load_checkpoint(file, model):
         return False
 
 
-batch_size = 64
-checkpoint_file = 'data/checkpoint_4.pt'
+parser = argparse.ArgumentParser()
+parser.add_argument('--batch-size', type=int, default=64)
+parser.add_argument('--num-workers', type=int, default=0)
+parser.add_argument('--data-file', type=str, required=True)
+parser.add_argument('--checkpoint', type=str, required=True)
+parser.add_argument('--parallel', action='store_true')
+args = parser.parse_args()
+
 model = SimpleCNN()
-model = nn.DataParallel(model)
+if args.parallel:
+    model = nn.DataParallel(model)
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
+
 transform = simple_cnn_transform(augment=False)
-train_loader, test_loader = get_data_loaders('data/fer2013.csv', batch_size, 0, transform)
-model_loaded = load_checkpoint(checkpoint_file, model)
+train_loader, val_loader, test_loader = get_data_loaders('data/fer2013.csv', args.batch_size, 0, transform)
+model_loaded = load_checkpoint(args.checkpoint, model)
 if model_loaded:
     eval_loop(model, test_loader, device)
 else:
-    print(f'Failed to load model from file {checkpoint_file}')
+    print(f'Failed to load model from file {args.checkpoint}')
