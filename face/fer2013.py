@@ -19,17 +19,23 @@ def prep_data(csv_file):
     # split train and test data
     x_train = np.array(df[df['Usage'] == 'Training']['pixels'].tolist())
     y_train = np.array(df[df['Usage'] == 'Training']['emotion'].tolist())
+
+    x_val = np.array(df[df['Usage'] == 'PrivateTest']['pixels'].tolist())
+    y_val = np.array(df[df['Usage'] == 'PrivateTest']['emotion'].tolist())
+
     x_test = np.array(df[df['Usage'] == 'PublicTest']['pixels'].tolist())
     y_test = np.array(df[df['Usage'] == 'PublicTest']['emotion'].tolist())
 
     # reshape pixel arrays
     x_train = x_train.reshape(-1, 48, 48)
+    x_val = x_val.reshape(-1, 48, 48)
     x_test = x_test.reshape(-1, 48, 48)
 
     assert len(x_train) == len(y_train)
+    assert len(x_val) == len(y_val)
     assert len(x_test) == len(y_test)
 
-    return x_train, y_train, x_test, y_test
+    return x_train, y_train, x_val, y_val, x_test, y_test
 
 
 class FER2013Dataset(Dataset):
@@ -50,12 +56,14 @@ class FER2013Dataset(Dataset):
 
 
 def get_data_loaders(csv_file, batch_size, num_workers, transform=None):
-    x_train, y_train, x_test, y_test = prep_data(csv_file)
+    x_train, y_train, x_val, y_val, x_test, y_test = prep_data(csv_file)
 
     train_dataset = FER2013Dataset(x_train, y_train, transform=transform)
+    val_dataset = FER2013Dataset(x_val, y_val, transform=transform)
     test_dataset = FER2013Dataset(x_test, y_test, transform=transform)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
-    return train_loader, test_loader
+    return train_loader, val_loader, test_loader

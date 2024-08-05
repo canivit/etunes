@@ -34,18 +34,45 @@ def train_epoch(model, optimizer, train_loader, loss_fn, device, epoch, start_ba
             save_checkpoint(model, optimizer, epoch, batch_idx + 1, dst_checkpoint)
 
     avg_loss = total_loss / count
-    print(f'Completed epoch {epoch}, Loss: {avg_loss:.4f}')
+    print(f'Completed epoch {epoch}, Testing Loss: {avg_loss:.4f}', end="")
     save_checkpoint(model, optimizer, epoch + 1, 0, dst_checkpoint)
 
 
-def train(model, optimizer, train_loader, loss_fn, device, start_epoch, end_epoch, start_batch,
+def validate(model, val_loader, loss_fn, device):
+    model.eval()  # Set model to evaluation mode
+    val_loss = 0.0
+    correct = 0
+    total = 0
+
+    with torch.no_grad():  # Disable gradient computation
+        for images, labels in val_loader:
+            images, labels = images.to(device), labels.to(device)  # Move data to the correct device
+
+            # Forward pass
+            outputs = model(images)
+            loss = loss_fn(outputs, labels)
+
+            # Update loss
+            val_loss += loss.item()
+
+            # Calculate accuracy
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+    avg_loss = val_loss / len(val_loader)
+    accuracy = 100 * correct / total
+
+    print(f', Validation Loss: {avg_loss}, Validation Accuracy: {accuracy}')
+
+
+def train(model, optimizer, train_loader, val_loader, loss_fn, device, start_epoch, end_epoch, start_batch,
           dst_checkpoint):
     for epoch in range(start_epoch, end_epoch):
         if epoch != start_epoch:
             start_batch = 0
         train_epoch(model, optimizer, train_loader, loss_fn, device, epoch, start_batch, dst_checkpoint)
-        if epoch > start_epoch:
-            continue
+        validate(model, val_loader, loss_fn, device)
 
 
 def save_checkpoint(model, optimizer, epoch, batch, file):
@@ -120,7 +147,8 @@ if __name__ == "__main__":
         model = nn.DataParallel(model)
 
     model.to(device)
-    transform = simple_cnn_transform(augment=True)
-    train_loader, test_loader = get_data_loaders(data_file, args.batch_size, args.num_workers, transform)
+    transform = simple_cnn_transform(augment=False)
+    train_loader, val_loader, test_loader = get_data_loaders(data_file, args.batch_size, args.num_workers, transform)
     start_epoch, start_batch = load_checkpoint(src_checkpoint, model, optimizer)
-    train(model, optimizer, train_loader, loss_fn, device, start_epoch, args.epochs, start_batch, dst_checkpoint)
+    train(model, optimizer, train_loader, val_loader, loss_fn, device, start_epoch, args.epochs, start_batch,
+          dst_checkpoint)
