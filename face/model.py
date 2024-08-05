@@ -31,17 +31,23 @@ class SimpleCNN(nn.Module):
         return x
 
 
-def simple_cnn_transform():
+def simple_cnn_transform(augment):
     """
     :return: transformation for `SimpleCNN` model
     """
-    return transforms.Compose([
-        transforms.ToPILImage(),
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(20),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
-    ])
+    if augment:
+        return transforms.Compose([
+            transforms.ToPILImage(),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomRotation(20),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+    else:
+        return transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
 
 
 def create_custom_vgg(num_classes):

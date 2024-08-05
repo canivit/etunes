@@ -21,13 +21,13 @@ pytorch_estimator = PyTorch(
     # instance_type='ml.c5.4xlarge',
     instance_type='ml.p3.8xlarge',
     hyperparameters={
-        'epochs': 100,
+        'epochs': 400,
         'batch-size': 64,
         'learning-rate': 0.001,
-        'num-workers': 4,
+        'num-workers': 16,
         'data-file': 'fer2013.csv',
-        # 'src-checkpoint': 'checkpoint_1.pt',
-        'dst-checkpoint': 'checkpoint_1.pt',
+        'src-checkpoint': 'checkpoint_3.pt',
+        'dst-checkpoint': 'checkpoint_4.pt',
     },
     checkpoint_s3_uri=s3_checkpoint_dir,
 )

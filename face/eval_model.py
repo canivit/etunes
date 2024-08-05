@@ -1,9 +1,10 @@
 import os
 import torch
 import tqdm
+from torch import nn
 
 from fer2013 import get_data_loaders
-from model import SimpleCNN, create_custom_vgg, vgg_transform
+from model import SimpleCNN, simple_cnn_transform
 
 
 def eval_loop(model, test_loader, device):
@@ -23,7 +24,7 @@ def eval_loop(model, test_loader, device):
 
 def load_checkpoint(file, model):
     if os.path.exists(file):
-        checkpoint = torch.load(file)
+        checkpoint = torch.load(file, map_location=torch.device('cpu'))
         model.load_state_dict(checkpoint['model_state_dict'])
         print(f'Model is loaded from checkpoint file: {file}')
         return True
@@ -32,12 +33,13 @@ def load_checkpoint(file, model):
 
 
 batch_size = 64
-checkpoint_file = 'data/vgg_checkpoint.pt'
-model = create_custom_vgg(num_classes=5)
+checkpoint_file = 'data/checkpoint_4.pt'
+model = SimpleCNN()
+model = nn.DataParallel(model)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model.to(device)
-transform = vgg_transform()
-train_loader, test_loader = get_data_loaders('data/fer2013.csv', batch_size, transform)
+transform = simple_cnn_transform(augment=False)
+train_loader, test_loader = get_data_loaders('data/fer2013.csv', batch_size, 0, transform)
 model_loaded = load_checkpoint(checkpoint_file, model)
 if model_loaded:
     eval_loop(model, test_loader, device)
