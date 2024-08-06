@@ -7,6 +7,29 @@ from spotipy.oauth2 import SpotifyClientCredentials
 from dotenv import load_dotenv
 
 
+def get_playlists():
+    return [
+        '5DVUEqRL1EV8I9n65eBaAw',  # sad
+        '7GhawGpb43Ctkq3PRP1fOL',  # happy
+        '5IwFDvJvKVub47mVa4DPY0',  # angry
+        '0sdnUIRzRN4Z3kvVI2wGA8',  # fear
+    ]
+
+
+def get_song_features():
+    return [
+        'acousticness',  # [0.0 - 1.0]
+        'danceability',  # [0.0 - 1.0]
+        'energy',  # [0.0 - 1.0]
+        'instrumentalness',  # [0.0 - 1.0]
+        'liveness',  # [0.0 - 1.0]
+        'loudness',  # [-60 - 0]
+        'speechiness',  # [0.0 - 1.0]
+        'tempo',  # API does not specify range
+        'valence',  # [0.0 - 1.0]
+    ]
+
+
 # returns the track ids of the songs in the playlist
 def get_songs_in_playlist(sp, playlist_id):
     results = sp.playlist_items(playlist_id, additional_types='tracks')
@@ -44,30 +67,13 @@ def parse_args():
 
 
 def main():
-    playlists = [
-        '5DVUEqRL1EV8I9n65eBaAw',  # sad
-        '7GhawGpb43Ctkq3PRP1fOL',  # happy
-        '5IwFDvJvKVub47mVa4DPY0',  # angry
-        '0sdnUIRzRN4Z3kvVI2wGA8',  # fear
-    ]
-
-    song_features = [
-        'acousticness',  # [0.0 - 1.0]
-        'danceability',  # [0.0 - 1.0]
-        'energy',  # [0.0 - 1.0]
-        'instrumentalness',  # [0.0 - 1.0]
-        'liveness',  # [0.0 - 1.0]
-        'loudness',  # [-60 - 0]
-        'speechiness',  # [0.0 - 1.0]
-        'tempo',  # API does not specify range
-        'valence',  # [0.0 - 1.0]
-    ]
-
     args = parse_args()
     load_dotenv()  # load Spotify API keys from .env file
     auth_manager = SpotifyClientCredentials()
     sp = spotipy.Spotify(auth_manager=auth_manager)
 
+    playlists = get_playlists()
+    song_features = get_song_features()
     df = create_dataframe(sp, playlists, song_features)
     df.to_csv(args.out, index=False)
 
