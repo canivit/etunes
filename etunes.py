@@ -1,5 +1,5 @@
+import argparse
 import random
-import time
 
 import cv2
 import spotipy
@@ -48,7 +48,10 @@ def predict_emotion(model, tensor):
         return predicted.item()
 
 
-def play_song(songs, predicted_emotion_idx, sp_client, frame):
+def play_song(songs, predicted_emotion_idx, sp_client):
+    if predicted_emotion_idx == 4:
+        return
+
     track_id, true_emotion_idx = random.choice(songs[predicted_emotion_idx])
     predicted_emotion = emotions[predicted_emotion_idx]
     true_emotion = emotions[true_emotion_idx]
@@ -73,10 +76,10 @@ def setup_capture_device():
     return cap
 
 
-def capture_face(capture_device):
+def capture_face(capture_device, cascade):
     ret, frame = capture_device.read()
     # Detect face using Haar Cascade
-    face_cascade = cv2.CascadeClassifier('face/haarcascade_frontalface_default.xml')
+    face_cascade = cv2.CascadeClassifier(cascade)
     faces = face_cascade.detectMultiScale(frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
     if len(faces) == 0:
         return frame, None
@@ -90,10 +93,10 @@ def draw_face_and_emotion(frame, face_x, face_y, face_w, face_h, emotion):
     cv2.imshow('Webcam', frame)
 
 
-def run(face_model, songs, sp_client):
+def run(face_model, songs, sp_client, cascade):
     cap = setup_capture_device()
     while True:
-        frame, face = capture_face(cap)
+        frame, face = capture_face(cap, cascade)
         if face is None:
             continue
 
@@ -102,14 +105,10 @@ def run(face_model, songs, sp_client):
         emotion_idx = predict_emotion(face_model, tensor)
         emotion = emotions[emotion_idx]
         draw_face_and_emotion(frame, face_x, face_y, face_w, face_h, emotion)
-        # skip neutral
-        # if emotion_idx == 4:
-        #     time.sleep(100)
-        #     continue
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord('p'):
-            play_song(songs, emotion_idx, sp_client, frame)
+            play_song(songs, emotion_idx, sp_client)
         elif key == ord('q'):
             break
 
@@ -117,20 +116,39 @@ def run(face_model, songs, sp_client):
     cv2.destroyAllWindows()
 
 
-def main():
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--redirect-uri', type=str, default='http://localhost:8080',
+                        help='Spotify Authentication URL')
+    parser.add_argument('--face-model', type=str, default='face/data/model.pt')
+    parser.add_argument('--cascade', type=str, default='face/haarcascade_frontalface_default.xml')
+    parser.add_argument('--song-model', type=str, default='music/data/model.pt')
+    parser.add_argument('--song-data', type=str, default='music/data/songs.csv')
+    return parser.parse_args()
+
+
+def setup_spotify_client(redirect_uri):
     load_dotenv()  # load Spotify API keys from .env file
     auth_manager = SpotifyOAuth(scope='user-modify-playback-state user-read-playback-state',
-                                redirect_uri='http://localhost:8080')
+                                redirect_uri=redirect_uri)
     sp_client = spotipy.Spotify(auth_manager=auth_manager)
+    return sp_client
+
+
+def main():
+    args = parse_args()
+    sp_client = setup_spotify_client(args.redirect_uri)
 
     num_features = len(get_song_features())
     num_emotions = len(get_playlists())  # playlist for each emotion
     music_model = SongEmotionNetwork(input_dim=num_features, output_dim=num_emotions, hidden_dim=100)
-    music_model.load_state_dict(torch.load('music/data/model.pt'))
-    songs = classify_songs('music/data/songs.csv', music_model, num_emotions)
+    music_model.load_state_dict(torch.load(args.song_model))
+    songs = classify_songs(args.song_data, music_model, num_emotions)
+
     face_model = SimpleCNN()
-    face_model.load_state_dict(torch.load('face/data/model.pt'))
-    run(face_model, songs, sp_client)
+    face_model.load_state_dict(torch.load(args.face_model))
+
+    run(face_model, songs, sp_client, args.cascade)
 
 
 if __name__ == "__main__":
