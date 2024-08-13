@@ -1,6 +1,7 @@
 import argparse
 
 import torch
+from sklearn.metrics import precision_score, recall_score, f1_score
 
 from model import SongEmotionNetwork
 from prep_data import get_song_features, get_playlists
@@ -8,6 +9,8 @@ from dataset import get_data_loaders
 
 
 def evaluate(model, test_loader):
+    all_labels = []
+    all_preds = []
     model.eval()
     with torch.no_grad():
         correct = 0
@@ -17,8 +20,18 @@ def evaluate(model, test_loader):
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+            all_labels.extend(labels.numpy())
+            all_preds.extend(predicted.numpy())
 
-        print(f'Accuracy of the model on the test set: {100 * correct / total:.2f}%')
+        accuracy = correct / total * 100
+        precision = precision_score(all_labels, all_preds, average='macro')
+        recall = recall_score(all_labels, all_preds, average='macro')
+        f1 = f1_score(all_labels, all_preds, average='macro')
+
+        print(f'Accuracy: {accuracy:.2f}%')
+        print(f'Precision: {precision:.4f}')
+        print(f'Recall: {recall:.4f}')
+        print(f'F1-Score: {f1:.4f}')
 
 
 def parse_args():

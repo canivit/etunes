@@ -2,6 +2,7 @@ import argparse
 import os
 import torch
 import tqdm
+from sklearn.metrics import precision_score, recall_score, f1_score
 from torch import nn
 
 from fer2013 import get_data_loaders
@@ -9,6 +10,8 @@ from model import SimpleCNN, simple_cnn_transform
 
 
 def eval_loop(model, test_loader, device):
+    all_labels = []
+    all_preds = []
     model.eval()
     with torch.no_grad():
         correct = 0
@@ -19,8 +22,18 @@ def eval_loop(model, test_loader, device):
             _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+            all_labels.extend(labels.numpy())
+            all_preds.extend(predicted.numpy())
 
-        print(f'Accuracy of the model on the test set: {100 * correct / total:.2f}%')
+        accuracy = correct / total * 100
+        precision = precision_score(all_labels, all_preds, average='macro')
+        recall = recall_score(all_labels, all_preds, average='macro')
+        f1 = f1_score(all_labels, all_preds, average='macro')
+
+        print(f'Accuracy: {accuracy:.2f}%')
+        print(f'Precision: {precision:.4f}')
+        print(f'Recall: {recall:.4f}')
+        print(f'F1-Score: {f1:.4f}')
 
 
 def load_checkpoint(file, model):
