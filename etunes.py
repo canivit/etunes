@@ -1,4 +1,5 @@
 import random
+import time
 
 import cv2
 import spotipy
@@ -22,7 +23,8 @@ def classify_songs(songs_csv, model, num_emotions):
             _, predicted = torch.max(outputs.data, 1)
             predicted = predicted.item()
             label = label.item()
-            songs[predicted].append((track_id[0], label))
+            if predicted == label:
+                songs[predicted].append((track_id[0], label))
     return songs
 
 
@@ -46,7 +48,7 @@ def predict_emotion(model, tensor):
         return predicted.item()
 
 
-def play_song(songs, predicted_emotion_idx, sp_client):
+def play_song(songs, predicted_emotion_idx, sp_client, frame):
     track_id, true_emotion_idx = random.choice(songs[predicted_emotion_idx])
     predicted_emotion = emotions[predicted_emotion_idx]
     true_emotion = emotions[true_emotion_idx]
@@ -54,39 +56,60 @@ def play_song(songs, predicted_emotion_idx, sp_client):
     print(f'Predicted: {predicted_emotion}, Actual: {true_emotion}')
     sp_client.start_playback(uris=[f'spotify:track:{track_id}'])
     while True:
-        if cv2.waitKey(1) & 0xFF == ord('p'):
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('p'):
             break
 
-    sp_client.pause_playback()
+    playback = sp_client.current_playback()
+    if playback and playback['is_playing']:
+        sp_client.pause_playback()
 
 
-def run(face_model, songs, sp_client):
+def setup_capture_device():
     # Capture the video from the webcam
     cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)  # Set the width to 1280 pixels
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)  # Set the height to 720 pixels
+    return cap
 
+
+def capture_face(capture_device):
+    ret, frame = capture_device.read()
+    # Detect face using Haar Cascade
+    face_cascade = cv2.CascadeClassifier('face/haarcascade_frontalface_default.xml')
+    faces = face_cascade.detectMultiScale(frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+    if len(faces) == 0:
+        return frame, None
+    else:
+        return frame, faces[0]
+
+
+def draw_face_and_emotion(frame, face_x, face_y, face_w, face_h, emotion):
+    cv2.rectangle(frame, (face_x, face_y), (face_x + face_w, face_y + face_h), (0, 255, 0), 2)
+    cv2.putText(frame, emotion, (face_x, face_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+    cv2.imshow('Webcam', frame)
+
+
+def run(face_model, songs, sp_client):
+    cap = setup_capture_device()
     while True:
-        ret, frame = cap.read()
-        # Detect face using Haar Cascade
-        face_cascade = cv2.CascadeClassifier('face/haarcascade_frontalface_default.xml')
-        faces = face_cascade.detectMultiScale(frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-        if len(faces) == 0:
+        frame, face = capture_face(cap)
+        if face is None:
             continue
 
-        (x, y, w, h) = faces[0]
-        face = frame[y:y + h, x:x + w]
-        tensor = image_to_tensor(face)
+        (face_x, face_y, face_w, face_h) = face
+        tensor = image_to_tensor(frame[face_y:face_y + face_h, face_x:face_x + face_w])
         emotion_idx = predict_emotion(face_model, tensor)
         emotion = emotions[emotion_idx]
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-        cv2.putText(frame, emotion, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 2)
+        draw_face_and_emotion(frame, face_x, face_y, face_w, face_h, emotion)
+        # skip neutral
+        # if emotion_idx == 4:
+        #     time.sleep(100)
+        #     continue
 
-        # Display the resulting frame
-        cv2.imshow('Webcam', frame)
         key = cv2.waitKey(1) & 0xFF
         if key == ord('p'):
-            play_song(songs, emotion_idx, sp_client)
+            play_song(songs, emotion_idx, sp_client, frame)
         elif key == ord('q'):
             break
 
