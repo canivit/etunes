@@ -12,7 +12,7 @@ def evaluate(model, test_loader):
     with torch.no_grad():
         correct = 0
         total = 0
-        for features, labels in test_loader:
+        for features, labels, track_ids in test_loader:
             outputs = model(features)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)

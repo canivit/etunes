@@ -12,7 +12,7 @@ from prep_data import get_song_features, get_playlists
 def train_epoch(model, optimizer, loss_fn, train_loader):
     model.train()
     total_loss = 0
-    for features, labels in train_loader:
+    for features, labels, track_ids in train_loader:
         # Forward pass
         outputs = model(features)
         loss = loss_fn(outputs, labels)
@@ -35,7 +35,7 @@ def validate(model, loss_fn, val_loader):
     total = 0
 
     with torch.no_grad():  # Disable gradient computation
-        for features, labels in val_loader:
+        for features, labels, track_ids in val_loader:
             # Forward pass
             outputs = model(features)
             loss = loss_fn(outputs, labels)

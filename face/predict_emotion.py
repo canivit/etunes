@@ -24,7 +24,6 @@ def predict_emotion(model, device, tensor):
     model.eval()
     with torch.no_grad():
         output = model(tensor)
-        print(output)
         _, predicted = torch.max(output, 1)
         emotion_idx = predicted.item()
         return emotions[emotion_idx]
@@ -43,6 +42,9 @@ def load_checkpoint(file, model):
 def run(model, device):
     # Capture the video from the webcam
     cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)  # Set the width to 1280 pixels
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)  # Set the height to 720 pixels
+
     while True:
         ret, frame = cap.read()
         if not ret:

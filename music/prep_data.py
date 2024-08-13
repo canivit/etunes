@@ -9,10 +9,10 @@ from dotenv import load_dotenv
 
 def get_playlists():
     return [
-        '5DVUEqRL1EV8I9n65eBaAw',  # sad
-        '7GhawGpb43Ctkq3PRP1fOL',  # happy
         '5IwFDvJvKVub47mVa4DPY0',  # angry
         '0sdnUIRzRN4Z3kvVI2wGA8',  # fear
+        '7GhawGpb43Ctkq3PRP1fOL',  # happy
+        '5DVUEqRL1EV8I9n65eBaAw',  # sad
     ]
 
 

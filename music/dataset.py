@@ -7,56 +7,57 @@ from torch.utils.data import Dataset, DataLoader
 
 
 class SongDataset(Dataset):
-    def __init__(self, features, labels):
+    def __init__(self, features, labels, track_ids):
         self.features = features
         self.labels = labels
+        self.track_ids = track_ids
 
     def __len__(self):
         return len(self.features)
 
     def __getitem__(self, idx):
-        return self.features[idx], self.labels[idx]
+        return self.features[idx], self.labels[idx], self.track_ids[idx]
 
 
-def get_features_and_labels(csv_file):
-    data = pd.read_csv(csv_file)
-
-    # split data into features and labels
-    x = data.iloc[:, 1:-1].values.astype(np.float32)
-    y = data.iloc[:, -1].values.astype(np.float32)
+def get_features_and_labels(df):
+    # split data into features, labels, and track_ids
+    track_ids = df.iloc[:, 0].to_numpy(dtype=str)
+    x = df.iloc[:, 1:-1].values.astype(np.float32)
+    y = df.iloc[:, -1].values.astype(np.float32)
 
     # normalize features
     scaler = MinMaxScaler()
     x = scaler.fit_transform(x)
     x = x.astype(np.float32)
 
-    return x, y
-
-
-def create_datasets(x, y):
-    # split dataset into train, validation, and test
-    x_train, x_temp, y_train, y_temp = train_test_split(x, y, test_size=0.3, random_state=6014)
-    x_val, x_test, y_val, y_test = train_test_split(x_temp, y_temp, test_size=0.5, random_state=6014)
-
     # convert to tensors
-    x_train = torch.tensor(x_train, dtype=torch.float32)
-    x_val = torch.tensor(x_val, dtype=torch.float32)
-    x_test = torch.tensor(x_test, dtype=torch.float32)
-    y_train = torch.tensor(y_train, dtype=torch.long)
-    y_val = torch.tensor(y_val, dtype=torch.long)
-    y_test = torch.tensor(y_test, dtype=torch.long)
+    x = torch.tensor(x, dtype=torch.float32)
+    y = torch.tensor(y, dtype=torch.long)
+
+    return x, y, track_ids
+
+
+def create_datasets(csv_file):
+    df = pd.read_csv(csv_file)
+
+    # split dataset into train, validation, and test
+    traindf, tempdf = train_test_split(df, test_size=0.3, random_state=6014, stratify=df['emotion'])
+    valdf, testdf = train_test_split(tempdf, test_size=0.5, random_state=6014, stratify=tempdf['emotion'])
+
+    x_train, y_train, tracks_train = get_features_and_labels(traindf)
+    x_val, y_val, tracks_val = get_features_and_labels(valdf)
+    x_test, y_test, tracks_test = get_features_and_labels(testdf)
 
     # create datasets
-    train_dataset = SongDataset(x_train, y_train)
-    val_dataset = SongDataset(x_val, y_val)
-    test_dataset = SongDataset(x_test, y_test)
+    train_dataset = SongDataset(x_train, y_train, tracks_train)
+    val_dataset = SongDataset(x_val, y_val, tracks_val)
+    test_dataset = SongDataset(x_test, y_test, tracks_test)
 
     return train_dataset, val_dataset, test_dataset
 
 
 def get_data_loaders(csv_file, batch_size):
-    x, y = get_features_and_labels(csv_file)
-    train_dataset, val_dataset, test_dataset = create_datasets(x, y)
+    train_dataset, val_dataset, test_dataset = create_datasets(csv_file)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
