@@ -13,7 +13,7 @@ from music.model import SongEmotionNetwork
 from music.prep_data import get_song_features, get_playlists
 
 
-def classify_songs(songs_csv, model, num_emotions):
+def classify_songs(songs_csv, model, num_emotions, only_keep_correct_predictions):
     train_loader, val_loader, test_loader = get_data_loaders(songs_csv, 1)
     songs = [[] for _ in range(num_emotions)]
     model.eval()
@@ -23,7 +23,9 @@ def classify_songs(songs_csv, model, num_emotions):
             _, predicted = torch.max(outputs.data, 1)
             predicted = predicted.item()
             label = label.item()
-            if predicted == label:
+            if only_keep_correct_predictions and predicted == label:
+                songs[predicted].append((track_id[0], label))
+            elif not only_keep_correct_predictions:
                 songs[predicted].append((track_id[0], label))
     return songs
 
@@ -124,6 +126,7 @@ def parse_args():
     parser.add_argument('--cascade', type=str, default='face/haarcascade_frontalface_default.xml')
     parser.add_argument('--song-model', type=str, default='music/data/model.pt')
     parser.add_argument('--song-data', type=str, default='music/data/songs.csv')
+    parser.add_argument('--always-correct-song', action='store_true')
     return parser.parse_args()
 
 
@@ -143,7 +146,7 @@ def main():
     num_emotions = len(get_playlists())  # playlist for each emotion
     music_model = SongEmotionNetwork(input_dim=num_features, output_dim=num_emotions, hidden_dim=100)
     music_model.load_state_dict(torch.load(args.song_model))
-    songs = classify_songs(args.song_data, music_model, num_emotions)
+    songs = classify_songs(args.song_data, music_model, num_emotions, args.always_correct_song)
 
     face_model = SimpleCNN()
     face_model.load_state_dict(torch.load(args.face_model))
