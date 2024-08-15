@@ -32,7 +32,8 @@ python etunes.py --face-model face_model.pt --song-model song_model.pt
 
 ## Face Classification
 
-We trained a CNN with 3 convolutional layers on the FER2013 dataset.
+We trained a CNN with 3 convolutional layers on the 
+[FER2013](https://paperswithcode.com/dataset/fer2013) dataset.
 We removed **disgust** and **surprise** emotions from the original dataset since it would be
 difficult to find songs that would match to those emotions. As a result, the model can classify a
 face as one of these emotions:
